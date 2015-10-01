@@ -5,7 +5,7 @@ menu:
   basestation: ../basestation
   codiad: ../codiad
 
-rss: /atom.xml
+rss: /blog/atom.xml
 
 # Content
 excerpt_link: Read More

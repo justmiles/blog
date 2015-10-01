@@ -1,18 +1,19 @@
 {
-  "name": "-blog",
+  "name": "blog",
   "version": "0.0.0",
   "private": true,
   "hexo": {
     "version": "3.1.1"
   },
   "scripts": {
-  	"start" : "hexo serve",
-  	"build" : "hexo clean && hexo generate && sudo cp -r public/* /var/www/html/blog/"
+    "start": "hexo serve",
+    "build": "hexo clean && hexo generate && sudo cp -r public/* /var/www/html/blog/"
   },
   "dependencies": {
     "hexo": "^3.1.0",
     "hexo-generator-archive": "^0.1.2",
     "hexo-generator-category": "^0.1.2",
+    "hexo-generator-feed": "^1.0.3",
     "hexo-generator-index": "^0.1.2",
     "hexo-generator-tag": "^0.1.1",
     "hexo-migrator-wordpress": "^0.1.2",
