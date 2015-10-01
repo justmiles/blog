@@ -1,9 +1,9 @@
 title: Chrome Extension Example
 
 categories:
-  - Software
-  - Tips & Tuts
+- Tips & Tuts
 date: 2012-10-05 18:20:41
+
 ---
 
 This nifty tool serves up files for quick access. The chrome extension shoots down a quick menu listing all the public files and links to them.
