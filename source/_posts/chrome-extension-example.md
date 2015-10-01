@@ -1,8 +1,6 @@
 title: Chrome Extension Example
 
-id: 132
 categories:
-  - Finding Apogee
   - Software
   - Tips & Tuts
 date: 2012-10-05 18:20:41
