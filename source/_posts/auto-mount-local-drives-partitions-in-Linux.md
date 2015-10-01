@@ -21,7 +21,7 @@ So you've dual booted linux but haven't yet purged Windows from your machine. Co
     #> /dev/sdb1            2048   167774207    234883071   82  Linux
     #> /dev/sdb2       167774208   234883072    625141759   82  HPFS/NTFS/exFAT
     ```
-2. Create a folder for this partition to mount. It can be anywhere, but convention is in the /mnt directory.
+2. Create a folder for this partition to mount. It can be anywhere, but convention is in the */mnt* directory.
     ```bash
     sudo mkdir /mnt/windows
     ```
