@@ -1,9 +1,9 @@
 title: Lastpass
-id: 193
 categories:
   - Tools
 date: 2012-09-10 16:50:01
 tags:
+
 ---
 
 Lastpass is a great solution for managing passwords.

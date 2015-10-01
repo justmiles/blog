@@ -1,9 +1,10 @@
 title: Save Emails as PDF
 id: 269
 categories:
-  - 'Tips &amp; Tuts'
+  - Tips & Tuts
 date: 2012-09-18 11:01:35
 tags:
+
 ---
 
 We've had a couple requests on how to save emails as a PDF file. Here's a quick tutorial on how to do just that using the Google Chrome web browser.
