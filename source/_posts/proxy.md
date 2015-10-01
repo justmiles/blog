@@ -1,6 +1,5 @@
 title: FA Web Proxy
 tags:
-  - proxy
   - software
 id: 182
 categories:

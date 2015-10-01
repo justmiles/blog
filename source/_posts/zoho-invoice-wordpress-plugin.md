@@ -1,7 +1,6 @@
 title: Zoho Invoice Wordpress Plugin
 id: 552
 categories:
-  - Finding Apogee
   - Software
 date: 2012-11-13 18:44:42
 tags:
