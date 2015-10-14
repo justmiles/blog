@@ -6,8 +6,8 @@
     "version": "3.1.1"
   },
   "scripts": {
-    "start": "node_modules/hexo/bin/hexo serve -p 80",
-    "build": "hexo clean && hexo generate && sudo cp -r public/* /var/www/html/blog/"
+    "start": "node_modules/hexo/bin/hexo serve -p 3000",
+    "build": "node_modules/hexo/bin/hexo clean && node_modules/hexo/bin/hexo generate"
   },
   "dependencies": {
     "hexo": "^3.1.0",
