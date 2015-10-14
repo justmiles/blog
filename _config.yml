@@ -3,7 +3,7 @@
 ## Source: https://github.com/hexojs/hexo/
 
 # Site
-title: Miles Maddox
+title: stuff worth noting
 subtitle:
 description:
 author: Miles Maddox
@@ -74,3 +74,7 @@ feed:
   type: atom
   path: atom.xml
   limit: 20
+
+# Disqus
+disqus_shortname: milesmaddox
+
