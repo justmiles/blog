@@ -2,7 +2,7 @@ title: Install Scripts
 tags: install-script
 date: 2015-10-08 18:31:38
 ---
-
+If you're like 
 ```bash
 #!/bin/sh
 VERSION=14.1.1
