@@ -1,6 +1,7 @@
 title: Deploying Hubot to AWS Elastic Beanstalk
 date: 2015-10-13 21:29
 tags:
+categories: [Tips & Tuts]
 ---
 
 If you haven't already embraced the ChatOps methodology it's time to seriously consider it. Coining the term, the folks over at Github describe it as "putting tools in the middle of the conversation". Their widely adopted implementation of this is through Hubot. Hubot runs on Node.js offering a light-weight backend but also the extensibility that Node.js offers.
