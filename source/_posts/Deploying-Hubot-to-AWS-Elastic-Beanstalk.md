@@ -6,7 +6,6 @@ categories: [Tips & Tuts]
 
 If you haven't already embraced the ChatOps methodology it's time to seriously consider it. Coining the term, the folks over at Github describe it as "putting tools in the middle of the conversation". Their widely adopted implementation of this is through Hubot. Hubot runs on Node.js offering a light-weight backend but also the extensibility that Node.js offers.
 
-## Enough about Hubot - how do we run it?
 To gain the ChatOps benefits from Hubot you'll want to run it somewhere that allows it access to internal resources. Ths way you can interact with your proprietary systems without exposing them to the internet. Should you find yourself in a place where you're either comfortable connecting your VPC to your local network or simply don't care about interacting with local resources this article is for you. Deploying Hubot to AWS Beanstalk is great because it has the scaling availability that Beanstalk offers coupled with the cheap pricing of EC2. Most hubot instances will easily fall within EC2's free tier.
 
 ## Create a Hubot
