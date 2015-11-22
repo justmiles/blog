@@ -1,0 +1,19 @@
+language: node_js
+node_js:
+  - "0.12.0"
+
+sudo: false
+
+addons:
+    apt:
+        packages:
+            - sshpass
+
+before_script:
+    - npm install
+
+after_success:
+    - ./node_modules/hexo/bin/hexo clean
+    - ./node_modules/hexo/bin/hexo generate
+    - export SSHPASS=$DEPLOY_PASS
+    - sshpass -e scp -P $DEPLOY_PORT -o stricthostkeychecking=no -r public/* $DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH
