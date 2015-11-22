@@ -15,11 +15,11 @@ It's a small project but still falls into basic project planning practice.
 - Migration is complete in a timely manner
 
 ### The How
-Using `dd` is convenient because it'll clone every single byte. It's important though to be cognitive of the fact that every byte being migrated is in jeapordy of becoming corrupt if the data is in use. To prevent this, make sure the drives aren't mounted first (step 2). 
+Using `dd` is convenient because it'll clone every single byte. It's important though to be cognizant of the fact that every byte being migrated is in jeopardy of becoming corrupt if the data is in use. To prevent this, make sure the drives aren't mounted first (step 2). 
 
 The `if` and `of` options from `dd` determine the input and output, respectively, of the data to be copied. 
 
-The `bs` option of `dd` determines how may bytes of data to migrate at a time. Bumping this will help improve the overall speed but reduces the granularity of each chunk migrated.
+The `bs` option of `dd` determines how many bytes of data to migrate at a time. Bumping this will help improve the overall speed but reduces the granularity of each chunk migrated.
 
 Note that we're going to copy the entire drive and not each partition individually (`/dev/sda1` for example). Copying the drives will migrate the partitions for us.
 
