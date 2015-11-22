@@ -16,4 +16,4 @@ after_success:
     - ./node_modules/hexo/bin/hexo clean
     - ./node_modules/hexo/bin/hexo generate
     - export SSHPASS=$DEPLOY_PASS
-    - sshpass -e scp -P $DEPLOY_PORT -o stricthostkeychecking=no -r public/* $DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH
+    - sshpass -e scp -P $DEPLOY_PORT -o stricthostkeychecking=no -r public/* $DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH > /dev/null 2>&1
