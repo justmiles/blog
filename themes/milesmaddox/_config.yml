@@ -1,11 +1,10 @@
 # Header
 menu:
-  blog: /
-  owncloud: ../owncloud
-  basestation: ../basestation
-  codiad: ../codiad
+  owncloud: https://www.milesmaddox.com/owncloud
+  basestation: https://www.milesmaddox.com/basestation
+  codiad: https://www.milesmaddox.com/codiad
 
-rss: /blog/atom.xml
+rss: /atom.xml
 
 # Content
 excerpt_link: Read More
@@ -14,15 +13,11 @@ fancybox: true
 # Sidebar
 sidebar: right
 widgets:
-- category
-- tag
-- tagcloud
-- archive
 - recent_posts
 
 # Miscellaneous
 google_analytics: UA-68541029-1
-favicon: /blog/favicon.png
+favicon: /favicon.png
 twitter:
 google_plus:
 fb_admins:
