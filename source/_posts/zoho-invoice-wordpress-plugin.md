@@ -1,12 +1,12 @@
 title: Zoho Invoice Wordpress Plugin
-id: 552
 categories:
   - Software
 date: 2012-11-13 18:44:42
 tags:
 ---
 
-Our latest project has been getting our invoicing software, Zoho Invoice, up and running for clients to view past invoices and current pending invoices from inside their user account. In doing so, we've decided to migrate our code to a plugin for everyone to use (for free of course).
+My latest project has been getting our invoicing software, Zoho Invoice, up and running for clients to view past 
+invoices and current pending invoices from inside their user account. In keeping all things modular, I've written it as a plugin for WP and have pushed the source to the WP market. 
 
 You can download the plugin [here](http://wordpress.org/extend/plugins/zoho-invoice/ "Zoho Invoice Plugin").
 

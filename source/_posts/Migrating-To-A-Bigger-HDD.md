@@ -1,6 +1,7 @@
 title: 'Clone a Hard Drive Using DD  '
 tags: [linux-things]
-categories: [Tips & Tuts]
+categories:
+  - Tips & Tuts
 date: 2015-10-25 14:45:00
 ---
 With the ever decreasing price on storage it is becoming increasingly common to upgrade hard drives to something a little faster or a little bigger. I, myself, am making a jump from a 500GB 7200RPM HDD to a 1TB SSD. Pretty excited about it. To emphasise my enthusiasm I decided to crank out a quick article on the technical side of the migration.
