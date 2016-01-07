@@ -15,5 +15,15 @@ before_script:
 after_success:
     - ./node_modules/hexo/bin/hexo clean
     - ./node_modules/hexo/bin/hexo generate
-    - export SSHPASS=$DEPLOY_PASS
-    - sshpass -e scp -P $DEPLOY_PORT -o stricthostkeychecking=no -r public/* $DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH > /dev/null 2>&1
+
+deploy:
+  provider: s3
+  bucket: "blog.milesmaddox.com"
+  skip_cleanup: true
+  acl: public_read
+  local_dir: public
+  region: 'us-west-2'
+  access_key_id:
+    secure: "YJLmFu5PUjiRJWXHf2V2PqveH5SxsFmaEdviyuuH2A15Wz6giLKsJz5foGOIj40ATxsGsUxJLicVIXRH7fwXtEO7LTQuue1ZXJQDK6HMdxshYlE/A79Y662pV5jJxoTETooElaSt0IuKuERq8898cO1RM5d9gnfP+hEruFHf/t7s0N2sCMp1zfzfauXDLgoNElAGtrtQSVdPZ3BX4SEm1FKvkKyEdgCwsq/6FWlT11YK7fbMqK5QLZQF1gOciX1PsjIAyIvzuoDEge+wD91Td+xqt8SZnx7Tm6Y2YefsyER78fE1WNlojN4NK8vZufTv0comH9LCNv+Nx9mJyWyjYyYNJcXPZequ7Ll4rXBb20s+JVc9JlRs9JC5YFsg45s0JPvx/ol+6X6EHWwreT4oBmWVn3pAJkxupoLHLFB1d/nDM8MtKVGJpvuNra7y2tXyyCaaN5/dwTfjPgEq1l6RDYdTYqyHxRZx2h4leU5idB6BNlhqX3x38TKUfLZmlCmudubQCrZFFXBk1C//rSR+iat9sAWBSJm2D9GwdckF5pZEzEh857SNCDEYx3vj1hEltMF6xgKcoo3uvwJ/6gV089d3AdII9vYS7TWx31E3jdquiB/LYQ3YWEcE70uT1MqRKPoXH1jWAT6Ds9MEhqrqGvyxbdTNs0MYKlJn8qOYxFI="
+  secret_access_key:
+    secure: "0YE7sCpbwS4pEfpyzocLkQ0hb/xXBsCa7FhY7RWIYyp1jXO9CbET8P8uDPjYZPp2xToinj3yjabXp3XpZua0XOcuhCPjVH+STse4bTBXZd7FQh6+Z7+8JibHWLlq43oaEtuK7M1xnmUPQjyJydisC9sHOk1O395JUDrf4b6XyVpRUbu3NoR96O3tBGpvNC0LkpemnHZS6u+ui6JdKn4siv6fDybqP4/IMK+HbCAxkeWo1UabcsJd+6PfGMrWUKrM3GuXIJvRhT3HiEV7M24LrHau3APN/FCXvCyRJdIJpYIY0r07WyO4e6y8W09gu/E+1wUYhTvzrpF7vGdMGJzV9iPyJW85oeQrIg9/U1fowue6HNlMzARpDi9dRla18tyqtoJaO/ag3KZBMa29PnDkpQudXBf3Hl1cUGqzbI7OoQLkMFfasGW1ne5MbJWKTXYgFFoIeHVfDeudLj/EKmDOwYHYQnzGCVDxny2IrxCz5OVBQZrF3ZRylQJb5lXlCqyzeI3lH6TBQSKox6hheeD2tLOC1m0RfjHp+UyOAJbXrJrfaZWYP37YjL/vwxVqGE+9MO/8LhUrYx0caMJ1XgqqlFJTh6pXaCuEJ0rYhbyOAmMrPPeWS42rNi3aWMdC5hUdVWbFnyqhzeCMFugHeunZdX0EfCu5+EtYwM1fU79vVDc="
