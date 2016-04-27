@@ -15,7 +15,7 @@ tcpdump -i any -w /tmp/http-80.log port 80 &
 
 View the monitor with tcpdump
 ```
-tcpdump -A -r /tmp/http-80.log | grep -B30 -A10 links/838/44/45
+tcpdump -A -r /tmp/http-80.log 
 ```
 
 Optionally, pop open file in wireshark to view it in a more detailed view.
