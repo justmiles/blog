@@ -4,7 +4,7 @@
 
 # Site
 title: My Inner Daemons
-subtitle: Notes on SRE daemons and tools
+subtitle: Notes from an SRE
 description:
 author: Miles Maddox
 language:
@@ -26,6 +26,10 @@ category_dir: categories
 code_dir: downloads/code
 i18n_dir: :lang
 skip_render:
+
+# Content
+excerpt_link: Read More
+fancybox: true
 
 # Writing
 new_post_name: :title.md # File name of new posts
@@ -76,5 +80,5 @@ feed:
   limit: 20
 
 # Disqus
-#disqus_shortname: milesmaddox
+disqus_shortname: milesmaddox
 

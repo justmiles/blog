@@ -1,12 +1,14 @@
 title: Auto-mount Local Drives/Partitions in Linux
 date: 2015-03-13 14:31:38
 categories:
-  - Tips & Tuts
+  - walkthrough
 tags:
   - linux-things
   
 ---
 So you've dual-booted linux but haven't yet purged Windows from your machine. Congrats on your progress but if you really want to help yourself go ahead and wipe the Windows partition, too. Alas, if you can't bring yourself to do so, here's how to mount the partition and ensure its persistence after rebooting.
+
+<!-- more -->
 
 1. View your local drives and partitions with `fdisk` and identify the drive you would like to mount. Following a dual-boot install, this will typically be */dev/sdb2*, so we'll assume that for the rest of the tut.
 Note that if it is a Windows partition, you'll see a _NTFS/exFAT_ under the System stats.

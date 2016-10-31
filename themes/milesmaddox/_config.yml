@@ -1,8 +1,8 @@
 # Header
 menu:
-  owncloud: https://www.milesmaddox.com/owncloud
-  basestation: https://www.milesmaddox.com/basestation
-  codiad: https://www.milesmaddox.com/codiad
+  home: /
+  # basestation: https://www.milesmaddox.com/basestation
+  # codiad: https://www.milesmaddox.com/codiad
 
 rss: /atom.xml
 

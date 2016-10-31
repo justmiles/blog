@@ -1,10 +1,12 @@
 title: Collection of Install Scripts
 categories:
-  - Tips & Tuts
+  - walkthrough
   
 date: 2015-10-08 18:31:00
 ---
 Chef, Ansible, and Puppet are all excellent tools for configuration management but every now and then you just need to install something quick and all you have is bash. I keep a constantly evolving collection of scripts for just this purpose. They are almost all for the Ubuntu flavor. If I know I am going to be in a VM for a while, I'll just kick off the whole spread.
+
+<!-- more -->
 
 You can [view the collection here](https://www.milesmaddox.com/owncloud/index.php/s/6zBPi8aSOPBrO7B "Install Scripts"), hosted via OwnCloud. Some examples below
 
