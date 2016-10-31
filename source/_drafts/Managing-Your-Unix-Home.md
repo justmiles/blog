@@ -4,4 +4,4 @@ tags:
 ---
 There's no place like `~/`. 
 
-You home truly is a special place. It's where you eat, sleep, and poop. 
+Your home truly is a special place. It's where you eat and sleep.
