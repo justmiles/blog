@@ -11,7 +11,6 @@
     "build": "node_modules/hexo/bin/hexo clean && node_modules/hexo/bin/hexo generate",
     "watch": "node_modules/.bin/watch -p 'source/*/*.md' -c 'node_modules/.bin/hexo generate'",
     "serve": "node_modules/.bin/http-server public"
-    
   },
   "dependencies": {
     "hexo": "^3.1.0",
@@ -23,6 +22,7 @@
     "hexo-migrator-wordpress": "^0.1.2",
     "hexo-renderer-ejs": "^0.1.0",
     "hexo-renderer-marked": "^0.2.4",
+    "hexo-renderer-scss": "^1.0.2",
     "hexo-renderer-stylus": "^0.3.0",
     "hexo-server": "^0.1.2"
   },
