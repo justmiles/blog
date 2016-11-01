@@ -1,0 +1,3 @@
+[submodule "themes/strata"]
+	path = themes/strata
+	url = git@github.com:livingos/hexo-theme-strata.git
