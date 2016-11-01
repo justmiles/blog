@@ -1,8 +1,12 @@
-title: Debugging Network Traffic with tcpdump
-date: 2016-4-27 11:00
-tags: networking
 ---
-
+title: Debugging Network Traffic with tcpdump
+date: 2016-04-27
+id: 1461733200
+categories:
+  - walkthrough
+tags:
+  - networking
+---
 ```
 apt-get install tcpdump
 apt-get install wireshark
