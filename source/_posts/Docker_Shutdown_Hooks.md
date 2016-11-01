@@ -35,6 +35,7 @@ The `wait` tells our script not to exit until our application does. This keeps t
 
 ## s3ql example
 Below is the script I used to mount and unmount s3ql.
+
 ```
 #!/bin/bash
 function gracefulshutdown {
