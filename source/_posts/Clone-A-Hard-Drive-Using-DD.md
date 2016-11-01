@@ -1,6 +1,7 @@
 ---
 title: Clone a Hard Drive Using DD
 date: 2015-10-25
+id: 1444755600
 tags:
   - linux
 categories:

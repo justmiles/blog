@@ -1,8 +1,11 @@
+---
 title: Chrome Extension Example
+date: 2015-10-25
+id: 1445749200
 categories:
   - walkthrough
-date: 2012-10-05 18:20:41
 ---
+
 This nifty tool serves up files for quick access. The chrome extension shoots down a quick menu listing all the public files and links to them.
 
 Install it from the Chrome Web Store - [Finding Apogee Files](https://chrome.google.com/webstore/detail/finding-apogee-files/endnganhmbpplijcealcciggijaohkfo "Finding Apogee Files Chrome Extension")
