@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>Collection of Install Scripts | My Inner Daemons</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="Chef, Ansible, and Puppet are all excellent tools for configuration management but every now and then you just need to install something quick and all you have is bash. I keep a constantly evolving co">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Collection of Install Scripts">
+<meta property="og:url" content="http://blog.milesmaddox.com/2015/10/08/install-scripts/index.html">
+<meta property="og:site_name" content="My Inner Daemons">
+<meta property="og:description" content="Chef, Ansible, and Puppet are all excellent tools for configuration management but every now and then you just need to install something quick and all you have is bash. I keep a constantly evolving co">
+<meta property="og:updated_time" content="2016-11-01T14:28:47.432Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Collection of Install Scripts">
+<meta name="twitter:description" content="Chef, Ansible, and Puppet are all excellent tools for configuration management but every now and then you just need to install something quick and all you have is bash. I keep a constantly evolving co">
+  
+    <link rel="alternative" href="/atom.xml" title="My Inner Daemons" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  <link rel="stylesheet" href="/css/style.css">
+  
+<!-- Google Analytics -->
+<script type="text/javascript">
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-68541029-1', 'auto');
+ga('send', 'pageview');
+
+</script>
+<!-- End Google Analytics -->
+
+
+</head>
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <div id="logo-wrap"></div>
+      <a href="/" id="logo">My Inner Daemons</a>
+      
+        <h2 id="subtitle-wrap">
+          <a href="/" id="subtitle">Notes from an SRE</a>
+        </h2>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">home</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" results="0" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://blog.milesmaddox.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-install-scripts" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2015/10/08/install-scripts/" class="article-date">
+  <time datetime="2015-10-08T05:00:00.000Z" itemprop="datePublished">2015-10-08</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/uncategorized/">uncategorized</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Collection of Install Scripts
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>Chef, Ansible, and Puppet are all excellent tools for configuration management but every now and then you just need to install something quick and all you have is bash. I keep a constantly evolving collection of scripts for just this purpose. They are almost all for the Ubuntu flavor. If I know I am going to be in a VM for a while, I’ll just kick off the whole spread.</p>
+<a id="more"></a>
+<p>You can <a href="https://www.milesmaddox.com/owncloud/index.php/s/6zBPi8aSOPBrO7B" title="Install Scripts" target="_blank" rel="external">view the collection here</a>, hosted via OwnCloud. Some examples below</p>
+<p><strong>Java</strong><br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div></pre></td><td class="code"><pre><div class="line"><span class="meta">#!/bin/sh</span></div><div class="line"></div><div class="line">MAJOR_VERSION=7</div><div class="line">MINOR_VERSION=76</div><div class="line">BUILD=13</div><div class="line"></div><div class="line">VERSION=<span class="string">"<span class="variable">$MAJOR_VERSION</span>"</span>u<span class="string">"<span class="variable">$MINOR_VERSION</span>"</span></div><div class="line">wget --no-cookies --no-check-certificate \</div><div class="line">--header <span class="string">"Cookie: gpw_e24=http%3A%2F%2Fwww.oracle.com%2F; oraclelicense=accept-securebackup-cookie"</span> \</div><div class="line"><span class="string">"http://download.oracle.com/otn-pub/java/jdk/<span class="variable">$VERSION</span>-b<span class="variable">$BUILD</span>/jdk-<span class="variable">$VERSION</span>-linux-x64.tar.gz"</span> \</div><div class="line">-O jdk-<span class="variable">$VERSION</span>-linux-x64.tar.gz</div><div class="line"></div><div class="line">sudo mkdir -p /usr/<span class="built_in">local</span>/java</div><div class="line">sudo tar xvzf jdk-<span class="variable">$VERSION</span>-linux-x64.tar.gz -C /usr/<span class="built_in">local</span>/java</div><div class="line">rm jdk-<span class="variable">$VERSION</span>-linux-x64.tar.gz</div><div class="line"></div><div class="line">JAVADIR=/usr/<span class="built_in">local</span>/java/jdk1.<span class="string">"<span class="variable">$MAJOR_VERSION</span>"</span>.0_<span class="string">"<span class="variable">$MINOR_VERSION</span>"</span></div><div class="line"></div><div class="line"><span class="comment">#Completely remove the OpenJDK/JRE from your system and create a directory to hold your Oracle Java JDK/JRE binaries. </span></div><div class="line">sudo apt-get purge openjdk-\*</div><div class="line"></div><div class="line"><span class="comment">#Inform your Ubuntu Linux system where your Oracle Java JDK/JRE is located.</span></div><div class="line">sudo update-alternatives --install <span class="string">"/usr/bin/java"</span> <span class="string">"java"</span> <span class="variable">$JAVADIR</span>/jre/bin/java 1</div><div class="line"></div><div class="line"><span class="comment">#Inform your Ubuntu Linux system that Oracle Java JDK/JRE must be the default Java.</span></div><div class="line">sudo update-alternatives --set java <span class="string">"<span class="variable">$JAVADIR</span>/jre/bin/java"</span></div></pre></td></tr></table></figure></p>
+<p><strong>ChefDK</strong><br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"><span class="meta">#!/bin/sh</span></div><div class="line">VERSION=0.9.0</div><div class="line">wget https://opscode-omnibus-packages.s3.amazonaws.com/ubuntu/12.04/x86_64/chefdk_<span class="variable">$VERSION_amd64</span>.deb -O ~/Downloads/chefdk.deb</div><div class="line"></div><div class="line">sudo dpkg -i ~/Downloads/chefdk.deb</div><div class="line">rm ~/Downloads/chefdk.deb</div><div class="line">sudo apt-get install ruby-full</div><div class="line"></div><div class="line">sh ./vagrant.sh</div></pre></td></tr></table></figure></p>
+<p><strong>IntelliJ</strong><br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line"><span class="meta">#!/bin/sh</span></div><div class="line">VERSION=14.1.1</div><div class="line">GROUP=`id -g -n <span class="variable">$USERNAME</span> | awk <span class="string">'&#123; print $1 &#125;'</span>`</div><div class="line">wget https://download.jetbrains.com/idea/ideaIU-<span class="variable">$VERSION</span>.tar.gz -O ideaIU.tar.gz</div><div class="line">sudo rm -rf /opt/intellij</div><div class="line">sudo tar -zxf ideaIU.tar.gz --transform <span class="string">'s_^idea-IU-[0-9]*\.[0-9]*\.[0-9]*/_intellij/_'</span>  -C /opt/</div><div class="line">sudo chown -R <span class="variable">$USERNAME</span>:<span class="variable">$GROUP</span> /opt/intellij</div><div class="line">rm ideaIU.tar.gz</div></pre></td></tr></table></figure></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.milesmaddox.com/2015/10/08/install-scripts/" data-id="ciuzmhq6x000hpqqdk6dsknlp" class="article-share-link">Share</a>
+      
+        <a href="http://blog.milesmaddox.com/2015/10/08/install-scripts/#disqus_thread" class="article-comment-link">Comments</a>
+      
+      
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2015/10/13/Deploying-Hubot-to-AWS-Elastic-Beanstalk/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          Deploying Hubot to AWS Elastic Beanstalk
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2015/03/13/auto-mount-local-drives-partitions-in-Linux/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">Auto-Mount Local Drives/Partitions in Linux</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+<section id="comments">
+  <div id="disqus_thread">
+    <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+  </div>
+</section>
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recents</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2016/10/31/Docker_Shutdown_Hooks/">Docker Shutdown Hooks</a>
+          </li>
+        
+          <li>
+            <a href="/2015/10/25/Clone-A-Hard-Drive-Using-DD/">Clone a Hard Drive Using DD</a>
+          </li>
+        
+          <li>
+            <a href="/2015/10/25/chrome-extension-example/">Chrome Extension Example</a>
+          </li>
+        
+          <li>
+            <a href="/2015/10/13/Deploying-Hubot-to-AWS-Elastic-Beanstalk/">Deploying Hubot to AWS Elastic Beanstalk</a>
+          </li>
+        
+          <li>
+            <a href="/2015/10/08/install-scripts/">Collection of Install Scripts</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/devops/">devops</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/software/">software</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/uncategorized/">uncategorized</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/walkthrough/">walkthrough</a><span class="category-list-count">4</span></li></ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2016 Miles Maddox<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">home</a>
+  
+</nav>
+    
+<script>
+  var disqus_shortname = 'milesmaddox';
+  
+  var disqus_url = 'http://blog.milesmaddox.com/2015/10/08/install-scripts/';
+  
+  (function(){
+    var dsq = document.createElement('script');
+    dsq.type = 'text/javascript';
+    dsq.async = true;
+    dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+  })();
+</script>
+
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  <link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+  <script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>

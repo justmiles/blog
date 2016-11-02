@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>Docker Shutdown Hooks | My Inner Daemons</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="Let me start by saying there are no shutdown hooks for docker. Supporting hooks in general have been an open feature request for two years now. In lieu of a legitimate shutdown hook, you can manage th">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Docker Shutdown Hooks">
+<meta property="og:url" content="http://blog.milesmaddox.com/2016/10/31/Docker_Shutdown_Hooks/index.html">
+<meta property="og:site_name" content="My Inner Daemons">
+<meta property="og:description" content="Let me start by saying there are no shutdown hooks for docker. Supporting hooks in general have been an open feature request for two years now. In lieu of a legitimate shutdown hook, you can manage th">
+<meta property="og:updated_time" content="2016-11-02T15:14:55.986Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Docker Shutdown Hooks">
+<meta name="twitter:description" content="Let me start by saying there are no shutdown hooks for docker. Supporting hooks in general have been an open feature request for two years now. In lieu of a legitimate shutdown hook, you can manage th">
+  
+    <link rel="alternative" href="/atom.xml" title="My Inner Daemons" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  <link rel="stylesheet" href="/css/style.css">
+  
+<!-- Google Analytics -->
+<script type="text/javascript">
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-68541029-1', 'auto');
+ga('send', 'pageview');
+
+</script>
+<!-- End Google Analytics -->
+
+
+</head>
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <div id="logo-wrap"></div>
+      <a href="/" id="logo">My Inner Daemons</a>
+      
+        <h2 id="subtitle-wrap">
+          <a href="/" id="subtitle">Notes from an SRE</a>
+        </h2>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">home</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" results="0" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://blog.milesmaddox.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-Docker_Shutdown_Hooks" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2016/10/31/Docker_Shutdown_Hooks/" class="article-date">
+  <time datetime="2016-10-31T05:00:00.000Z" itemprop="datePublished">2016-10-31</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/devops/">devops</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Docker Shutdown Hooks
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>Let me start by saying there are no shutdown hooks for docker. Supporting hooks in general have been an <a href="https://github.com/docker/docker/issues/6982" target="_blank" rel="external">open feature request</a> for two years now. In lieu of a legitimate shutdown hook, you can manage the graceful shutdown of your container through a wrapper script that responds to <code>SIGINT</code> and <code>SIGTERM</code> signals.</p>
+<a id="more"></a>
+<p>By default, Docker stops containers by sending <code>SIGTERM</code> to process <code>1</code> inside the container. It gives the process a short few seconds (I’m not sure exactly how long the default is) before sending <code>SIGKILL</code> to the kernel itself to terminate the process. If your process needs to properly close connections or exit in a clean fashion it has a very short window to do so. You can set the amount of time your between the <code>SIGTERM</code> signal being sent to the process and the <code>SIGKILL</code> signal sent to the kernel with the <code>--time</code> argument: <code>docker stop --time=30 &lt;container&gt;</code>, but sometimes you need to manually specify a shutdown procedure.<br>By default, Docker stops containers by sending <code>SIGTERM</code> to process <code>1</code> inside the container. It gives the process a short few seconds (I’m not sure exactly how long the default is) before sending <code>SIGKILL</code> to the kernel itself to terminate the process. If your process needs to properly close connections or exit in a clean fashion it has a very short window to do so. You can set the amount of time your between the <code>SIGTERM</code> signal being sent to the process and the <code>SIGKILL</code> signal sent to the kernel with the <code>--time</code> argument: <code>docker stop --time=30 &lt;container&gt;</code>, but sometimes you need to manually specify a shutdown procedure.</p>
+<p>I ran into this issue recently when building a container that mounts an  <a href="https://bitbucket.org/nikratio/s3ql/" target="_blank" rel="external">s3ql filesystem</a>. In order to ensure data is completely written to the filesystem you need to properly dismount it before closing the container. If you drop a file onto the filesystem and close it shortly thereafter, there a strong chance the file hasn’t fully uploaded to S3. And with S3QL specifically you need to properly unmount the filesystem in order to mount it again without errors. So I had to find a way to unmount before the container closed. </p>
+<h2 id="entrypoint-sh"><a href="#entrypoint-sh" class="headerlink" title="entrypoint.sh"></a>entrypoint.sh</h2><p>Enter the wrapper script. If you’re familiar with Docker, you know of the <a href="https://docs.docker.com/engine/reference/#entrypoint-default-command-to-execute-at-runtime" target="_blank" rel="external">docker entrypoint</a> functionality. This trick here is to write an entrypoint script that stays process 1 in the container. The entrypoint script will start your application and contain the functionality to gracefully shutdown. </p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line"><span class="meta">#!/bin/bash</span></div><div class="line"><span class="keyword">function</span> gracefulShutdown &#123;</div><div class="line">  <span class="built_in">echo</span> <span class="string">"Shutting down!"</span></div><div class="line">  <span class="comment"># do something..</span></div><div class="line">&#125;</div><div class="line"><span class="built_in">trap</span> gracefulShutdown SIGTERM</div><div class="line"><span class="built_in">exec</span> <span class="string">"<span class="variable">$@</span>"</span> &amp;</div><div class="line"><span class="built_in">wait</span></div></pre></td></tr></table></figure>
+<p>Using <code>trap</code> we can call the gracefulShutdown function once <code>SIGTERM</code> is received.<br>Executing all arguments in the background with <code>exec &quot;$@&quot; &amp;</code> allows us to start our application in its own separate process, leaving process 1 for the entrypoint script.<br>The <code>wait</code> tells our script not to exit until our application does. This keeps the entrypoint script alive long enough to hear any system signals.</p>
+<h2 id="s3ql-example"><a href="#s3ql-example" class="headerlink" title="s3ql example"></a>s3ql example</h2><p>Below is the script I used to mount and unmount s3ql.</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div></pre></td><td class="code"><pre><div class="line"><span class="meta">#!/bin/bash</span></div><div class="line"><span class="keyword">function</span> gracefulshutdown &#123;</div><div class="line">  <span class="built_in">echo</span> <span class="string">"Shutting down!"</span></div><div class="line">  umount.s3ql /mnt &amp;&amp; <span class="built_in">echo</span> <span class="string">"s3ql unmounted"</span> || <span class="built_in">echo</span> <span class="string">"could not unmount s3ql"</span></div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="built_in">trap</span> gracefulshutdown SIGTERM</div><div class="line"><span class="built_in">trap</span> gracefulshutdown SIGINT</div><div class="line"></div><div class="line"><span class="built_in">export</span> AUTH_FILE=/root/s3ql_auth</div><div class="line">cat &lt;&lt; EOF &gt; <span class="variable">$AUTH_FILE</span></div><div class="line">[<span class="variable">$AWS_BUCKET</span>]</div><div class="line">storage-url: s3://<span class="variable">$AWS_BUCKET</span></div><div class="line">backend-login: <span class="variable">$AWS_SECRET</span></div><div class="line">backend-password: <span class="variable">$AWS_KEY</span></div><div class="line">fs-passphrase: <span class="variable">$S3QL_FS_PASSPHRASE</span></div><div class="line">EOF</div><div class="line"></div><div class="line">chmod 600 <span class="variable">$AUTH_FILE</span></div><div class="line"></div><div class="line"><span class="built_in">echo</span> <span class="string">'continue'</span> | fsck.s3ql s3://<span class="variable">$AWS_BUCKET</span> --authfile <span class="variable">$AUTH_FILE</span></div><div class="line">mount.s3ql s3://<span class="variable">$AWS_BUCKET</span> /mnt \</div><div class="line">  --quiet \</div><div class="line">  --authfile <span class="variable">$AUTH_FILE</span> \</div><div class="line">  --allow-other &amp;&amp; <span class="built_in">echo</span> <span class="string">"fs mounted"</span></div><div class="line"></div><div class="line"><span class="built_in">exec</span> <span class="string">"<span class="variable">$@</span>"</span> &amp;</div><div class="line"><span class="built_in">wait</span></div></pre></td></tr></table></figure>
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.milesmaddox.com/2016/10/31/Docker_Shutdown_Hooks/" data-id="ciuzmhq6i0005pqqdus8vnjgm" class="article-share-link">Share</a>
+      
+        <a href="http://blog.milesmaddox.com/2016/10/31/Docker_Shutdown_Hooks/#disqus_thread" class="article-comment-link">Comments</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/docker/">docker</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+  
+    <a href="/2015/10/25/Clone-A-Hard-Drive-Using-DD/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">Clone a Hard Drive Using DD</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+<section id="comments">
+  <div id="disqus_thread">
+    <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+  </div>
+</section>
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recents</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2016/10/31/Docker_Shutdown_Hooks/">Docker Shutdown Hooks</a>
+          </li>
+        
+          <li>
+            <a href="/2015/10/25/Clone-A-Hard-Drive-Using-DD/">Clone a Hard Drive Using DD</a>
+          </li>
+        
+          <li>
+            <a href="/2015/10/25/chrome-extension-example/">Chrome Extension Example</a>
+          </li>
+        
+          <li>
+            <a href="/2015/10/13/Deploying-Hubot-to-AWS-Elastic-Beanstalk/">Deploying Hubot to AWS Elastic Beanstalk</a>
+          </li>
+        
+          <li>
+            <a href="/2015/10/08/install-scripts/">Collection of Install Scripts</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/devops/">devops</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/software/">software</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/uncategorized/">uncategorized</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/walkthrough/">walkthrough</a><span class="category-list-count">4</span></li></ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2016 Miles Maddox<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">home</a>
+  
+</nav>
+    
+<script>
+  var disqus_shortname = 'milesmaddox';
+  
+  var disqus_url = 'http://blog.milesmaddox.com/2016/10/31/Docker_Shutdown_Hooks/';
+  
+  (function(){
+    var dsq = document.createElement('script');
+    dsq.type = 'text/javascript';
+    dsq.async = true;
+    dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+  })();
+</script>
+
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  <link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+  <script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>
