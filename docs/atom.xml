@@ -1,0 +1,280 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>My Inner Daemons</title>
+  <subtitle>Notes from an SRE</subtitle>
+  <link href="/atom.xml" rel="self"/>
+  
+  <link href="http://blog.milesmaddox.com/"/>
+  <updated>2016-11-02T15:14:55.986Z</updated>
+  <id>http://blog.milesmaddox.com/</id>
+  
+  <author>
+    <name>Miles Maddox</name>
+    
+  </author>
+  
+  <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>Docker Shutdown Hooks</title>
+    <link href="http://blog.milesmaddox.com/2016/10/31/Docker_Shutdown_Hooks/"/>
+    <id>http://blog.milesmaddox.com/2016/10/31/Docker_Shutdown_Hooks/</id>
+    <published>2016-10-31T05:00:00.000Z</published>
+    <updated>2016-11-02T15:14:55.986Z</updated>
+    
+    <content type="html"><![CDATA[<p>Let me start by saying there are no shutdown hooks for docker. Supporting hooks in general have been an <a href="https://github.com/docker/docker/issues/6982" target="_blank" rel="external">open feature request</a> for two years now. In lieu of a legitimate shutdown hook, you can manage the graceful shutdown of your container through a wrapper script that responds to <code>SIGINT</code> and <code>SIGTERM</code> signals.</p>
+<a id="more"></a>
+<p>By default, Docker stops containers by sending <code>SIGTERM</code> to process <code>1</code> inside the container. It gives the process a short few seconds (I’m not sure exactly how long the default is) before sending <code>SIGKILL</code> to the kernel itself to terminate the process. If your process needs to properly close connections or exit in a clean fashion it has a very short window to do so. You can set the amount of time your between the <code>SIGTERM</code> signal being sent to the process and the <code>SIGKILL</code> signal sent to the kernel with the <code>--time</code> argument: <code>docker stop --time=30 &lt;container&gt;</code>, but sometimes you need to manually specify a shutdown procedure.<br>By default, Docker stops containers by sending <code>SIGTERM</code> to process <code>1</code> inside the container. It gives the process a short few seconds (I’m not sure exactly how long the default is) before sending <code>SIGKILL</code> to the kernel itself to terminate the process. If your process needs to properly close connections or exit in a clean fashion it has a very short window to do so. You can set the amount of time your between the <code>SIGTERM</code> signal being sent to the process and the <code>SIGKILL</code> signal sent to the kernel with the <code>--time</code> argument: <code>docker stop --time=30 &lt;container&gt;</code>, but sometimes you need to manually specify a shutdown procedure.</p>
+<p>I ran into this issue recently when building a container that mounts an  <a href="https://bitbucket.org/nikratio/s3ql/" target="_blank" rel="external">s3ql filesystem</a>. In order to ensure data is completely written to the filesystem you need to properly dismount it before closing the container. If you drop a file onto the filesystem and close it shortly thereafter, there a strong chance the file hasn’t fully uploaded to S3. And with S3QL specifically you need to properly unmount the filesystem in order to mount it again without errors. So I had to find a way to unmount before the container closed. </p>
+<h2 id="entrypoint-sh"><a href="#entrypoint-sh" class="headerlink" title="entrypoint.sh"></a>entrypoint.sh</h2><p>Enter the wrapper script. If you’re familiar with Docker, you know of the <a href="https://docs.docker.com/engine/reference/#entrypoint-default-command-to-execute-at-runtime" target="_blank" rel="external">docker entrypoint</a> functionality. This trick here is to write an entrypoint script that stays process 1 in the container. The entrypoint script will start your application and contain the functionality to gracefully shutdown. </p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line"><span class="meta">#!/bin/bash</span></div><div class="line"><span class="keyword">function</span> gracefulShutdown &#123;</div><div class="line">  <span class="built_in">echo</span> <span class="string">"Shutting down!"</span></div><div class="line">  <span class="comment"># do something..</span></div><div class="line">&#125;</div><div class="line"><span class="built_in">trap</span> gracefulShutdown SIGTERM</div><div class="line"><span class="built_in">exec</span> <span class="string">"<span class="variable">$@</span>"</span> &amp;</div><div class="line"><span class="built_in">wait</span></div></pre></td></tr></table></figure>
+<p>Using <code>trap</code> we can call the gracefulShutdown function once <code>SIGTERM</code> is received.<br>Executing all arguments in the background with <code>exec &quot;$@&quot; &amp;</code> allows us to start our application in its own separate process, leaving process 1 for the entrypoint script.<br>The <code>wait</code> tells our script not to exit until our application does. This keeps the entrypoint script alive long enough to hear any system signals.</p>
+<h2 id="s3ql-example"><a href="#s3ql-example" class="headerlink" title="s3ql example"></a>s3ql example</h2><p>Below is the script I used to mount and unmount s3ql.</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div></pre></td><td class="code"><pre><div class="line"><span class="meta">#!/bin/bash</span></div><div class="line"><span class="keyword">function</span> gracefulshutdown &#123;</div><div class="line">  <span class="built_in">echo</span> <span class="string">"Shutting down!"</span></div><div class="line">  umount.s3ql /mnt &amp;&amp; <span class="built_in">echo</span> <span class="string">"s3ql unmounted"</span> || <span class="built_in">echo</span> <span class="string">"could not unmount s3ql"</span></div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="built_in">trap</span> gracefulshutdown SIGTERM</div><div class="line"><span class="built_in">trap</span> gracefulshutdown SIGINT</div><div class="line"></div><div class="line"><span class="built_in">export</span> AUTH_FILE=/root/s3ql_auth</div><div class="line">cat &lt;&lt; EOF &gt; <span class="variable">$AUTH_FILE</span></div><div class="line">[<span class="variable">$AWS_BUCKET</span>]</div><div class="line">storage-url: s3://<span class="variable">$AWS_BUCKET</span></div><div class="line">backend-login: <span class="variable">$AWS_SECRET</span></div><div class="line">backend-password: <span class="variable">$AWS_KEY</span></div><div class="line">fs-passphrase: <span class="variable">$S3QL_FS_PASSPHRASE</span></div><div class="line">EOF</div><div class="line"></div><div class="line">chmod 600 <span class="variable">$AUTH_FILE</span></div><div class="line"></div><div class="line"><span class="built_in">echo</span> <span class="string">'continue'</span> | fsck.s3ql s3://<span class="variable">$AWS_BUCKET</span> --authfile <span class="variable">$AUTH_FILE</span></div><div class="line">mount.s3ql s3://<span class="variable">$AWS_BUCKET</span> /mnt \</div><div class="line">  --quiet \</div><div class="line">  --authfile <span class="variable">$AUTH_FILE</span> \</div><div class="line">  --allow-other &amp;&amp; <span class="built_in">echo</span> <span class="string">"fs mounted"</span></div><div class="line"></div><div class="line"><span class="built_in">exec</span> <span class="string">"<span class="variable">$@</span>"</span> &amp;</div><div class="line"><span class="built_in">wait</span></div></pre></td></tr></table></figure>]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;Let me start by saying there are no shutdown hooks for docker. Supporting hooks in general have been an &lt;a href=&quot;https://github.com/docker/docker/issues/6982&quot;&gt;open feature request&lt;/a&gt; for two years now. In lieu of a legitimate shutdown hook, you can manage the graceful shutdown of your container through a wrapper script that responds to &lt;code&gt;SIGINT&lt;/code&gt; and &lt;code&gt;SIGTERM&lt;/code&gt; signals.&lt;/p&gt;
+    
+    </summary>
+    
+      <category term="devops" scheme="http://blog.milesmaddox.com/categories/devops/"/>
+    
+    
+      <category term="docker" scheme="http://blog.milesmaddox.com/tags/docker/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Clone a Hard Drive Using DD</title>
+    <link href="http://blog.milesmaddox.com/2015/10/25/Clone-A-Hard-Drive-Using-DD/"/>
+    <id>http://blog.milesmaddox.com/2015/10/25/Clone-A-Hard-Drive-Using-DD/</id>
+    <published>2015-10-25T05:00:00.000Z</published>
+    <updated>2016-11-01T15:00:41.444Z</updated>
+    
+    <content type="html"><![CDATA[<p>With the ever decreasing price on storage it is becoming increasingly common to upgrade hard drives to something a little faster or a little bigger. I, myself, am making a jump from a 500GB 7200RPM HDD to a 1TB SSD. Pretty excited about it. To emphasise my enthusiasm I decided to crank out a quick article on the technical side of the migration.<br><a id="more"></a><br>It’s a small project but still falls into basic project planning practice. </p>
+<p><strong>Functional Requirements</strong></p>
+<ul>
+<li>Data integrity - Ensure that data is not missing or corrupt</li>
+<li>Compatibility - Other than speed and space, there shouldn’t be a noticable difference after swapping hard drives</li>
+</ul>
+<p><strong>Non-Functional Requirements</strong></p>
+<ul>
+<li>Migration is complete in a timely manner</li>
+</ul>
+<h3 id="The-How"><a href="#The-How" class="headerlink" title="The How"></a>The How</h3><p>Using <code>dd</code> is convenient because it’ll clone every single byte. It’s important though to be cognizant of the fact that every byte being migrated is in jeopardy of becoming corrupt if the data is in use. To prevent this, make sure the drives aren’t mounted first (step 2). </p>
+<p>The <code>if</code> and <code>of</code> options from <code>dd</code> determine the input and output, respectively, of the data to be copied. </p>
+<p>The <code>bs</code> option of <code>dd</code> determines how many bytes of data to migrate at a time. Bumping this will help improve the overall speed but reduces the granularity of each chunk migrated.</p>
+<p>Note that we’re going to copy the entire drive and not each partition individually (<code>/dev/sda1</code> for example). Copying the drives will migrate the partitions for us.</p>
+<ol>
+<li><p>Use <code>fdisk</code> to identify your old and new drives.</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">sudo fdisk <span class="_">-l</span></div></pre></td></tr></table></figure>
+</li>
+<li><p>Unmount the drives you’re working with <code>umount</code></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">sudo umount /dev/sda</div><div class="line">sudo umount /dev/sdb</div></pre></td></tr></table></figure>
+</li>
+<li><p>Perform the migration with <code>dd</code></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">dd <span class="keyword">if</span>=/dev/sda of=/dev/sdb bs=32M</div></pre></td></tr></table></figure></li>
+</ol>
+]]></content>
+    
+    <summary type="html">
+    
+      description
+    
+    </summary>
+    
+      <category term="walkthrough" scheme="http://blog.milesmaddox.com/categories/walkthrough/"/>
+    
+    
+      <category term="linux" scheme="http://blog.milesmaddox.com/tags/linux/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Chrome Extension Example</title>
+    <link href="http://blog.milesmaddox.com/2015/10/25/chrome-extension-example/"/>
+    <id>http://blog.milesmaddox.com/2015/10/25/chrome-extension-example/</id>
+    <published>2015-10-25T05:00:00.000Z</published>
+    <updated>2016-11-01T14:32:26.640Z</updated>
+    
+    <content type="html"><![CDATA[<p>This nifty tool serves up files for quick access. The chrome extension shoots down a quick menu listing all the public files and links to them.</p>
+<p>Install it from the Chrome Web Store - <a href="https://chrome.google.com/webstore/detail/finding-apogee-files/endnganhmbpplijcealcciggijaohkfo" title="Finding Apogee Files Chrome Extension" target="_blank" rel="external">Finding Apogee Files</a></p>
+<a id="more"></a>
+<h3 id="The-how"><a href="#The-how" class="headerlink" title="The how"></a>The how</h3><p>This extension uses jQuery to parse an XML file that was generated by PHP.</p>
+<p>Our web server is hosted locally here at Finding Apogee. Using a specific directory as our “Dropbox”,  PHP to generates an xml file describing the contents of that directory. Looks a lot like this:<br><figure class="highlight php"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div></pre></td><td class="code"><pre><div class="line"><span class="meta">&lt;?php</span> header(<span class="string">'Content-Type: text/xml'</span>); <span class="meta">?&gt;</span></div><div class="line"><span class="meta">&lt;?</span>xml version=<span class="string">'1.0'</span> encoding=<span class="string">'ISO-8859-1'</span> <span class="meta">?&gt;</span></div><div class="line">&lt;xml&gt;</div><div class="line">  <span class="meta">&lt;?php</span></div><div class="line">    $dir = <span class="string">'PATH_TO_YOUR_DIR'</span>;</div><div class="line">    <span class="keyword">if</span> ($handle = opendir($dir)) &#123;</div><div class="line">      <span class="keyword">while</span> (<span class="keyword">false</span> !== ($entry = readdir($handle))) &#123;</div><div class="line">      <span class="keyword">if</span> ($entry != <span class="string">"."</span> &amp;&amp; $entry != <span class="string">".."</span> &amp;&amp; $entry != <span class="string">"Thumbs.db"</span>) &#123;</div><div class="line">        <span class="keyword">if</span> (is_dir($dir.<span class="string">"/"</span>.$entry)) &#123;</div><div class="line">          <span class="keyword">echo</span> <span class="string">"&lt;dir&gt;&lt;/dir&gt;"</span>;</div><div class="line">        &#125; <span class="keyword">else</span> &#123;</div><div class="line">          <span class="keyword">echo</span> <span class="string">"&lt;file&gt;"</span>;</div><div class="line">          <span class="keyword">echo</span> <span class="string">" &lt;filename&gt;$entry&lt;/filename&gt;"</span>;</div><div class="line">          <span class="keyword">echo</span> <span class="string">" &lt;filepath&gt;HTTP_PATH_TO_YOUR_DIR/$entry&lt;/filepath&gt;"</span>;</div><div class="line">          <span class="keyword">echo</span> <span class="string">"&lt;/file&gt;"</span>;</div><div class="line">        &#125;</div><div class="line">      &#125;</div><div class="line">    &#125;</div><div class="line">    closedir($handle);</div><div class="line">  &#125;<span class="meta">?&gt;</span></div><div class="line">&lt;/xml&gt;</div></pre></td></tr></table></figure></p>
+<p>Once the PHP generates the necessary XML, we can grab it with javascript.</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">$(d).find(‘file’).each(function()&#123;</div><div class="line"></div><div class="line">var $file= $(this);</div><div class="line">var filename = $file.find(“filename”).text();</div><div class="line">var filepath = $file.find(‘filepath’).text();</div><div class="line"></div><div class="line">var html = ‘&lt;li class=”menu”&gt;&lt;a href=”‘ + filepath + ‘” target=”_blank”&gt;’ +filename + ‘&lt;/a&gt; ‘;</div><div class="line">html += ‘&lt;/li&gt;’;</div><div class="line"></div><div class="line">$(‘ul’).append($(html));</div></pre></td></tr></table></figure>]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;This nifty tool serves up files for quick access. The chrome extension shoots down a quick menu listing all the public files and links to them.&lt;/p&gt;
+&lt;p&gt;Install it from the Chrome Web Store - &lt;a href=&quot;https://chrome.google.com/webstore/detail/finding-apogee-files/endnganhmbpplijcealcciggijaohkfo&quot; title=&quot;Finding Apogee Files Chrome Extension&quot;&gt;Finding Apogee Files&lt;/a&gt;&lt;/p&gt;
+    
+    </summary>
+    
+      <category term="walkthrough" scheme="http://blog.milesmaddox.com/categories/walkthrough/"/>
+    
+    
+  </entry>
+  
+  <entry>
+    <title>Deploying Hubot to AWS Elastic Beanstalk</title>
+    <link href="http://blog.milesmaddox.com/2015/10/13/Deploying-Hubot-to-AWS-Elastic-Beanstalk/"/>
+    <id>http://blog.milesmaddox.com/2015/10/13/Deploying-Hubot-to-AWS-Elastic-Beanstalk/</id>
+    <published>2015-10-13T05:00:00.000Z</published>
+    <updated>2016-11-01T14:31:03.252Z</updated>
+    
+    <content type="html"><![CDATA[<p>If you haven’t already embraced the ChatOps methodology it’s time to seriously consider it. Coining the term, the folks over at Github describe it as “putting tools in the middle of the conversation”. Their widely adopted implementation of this is through Hubot. Hubot runs on Node.js offering a light-weight backend but also the extensibility that Node.js offers.</p>
+<p>To gain the ChatOps benefits from Hubot you’ll want to run it somewhere that allows it access to internal resources. Ths way you can interact with your proprietary systems without exposing them to the internet. Should you find yourself in a place where you’re either comfortable connecting your VPC to your local network or simply don’t care about interacting with local resources this article is for you. Deploying Hubot to AWS Beanstalk is great because it has the scaling availability that Beanstalk offers coupled with the cheap pricing of EC2. Most hubot instances will easily fall within EC2’s free tier.</p>
+<a id="more"></a>
+<h2 id="Create-a-Hubot"><a href="#Create-a-Hubot" class="headerlink" title="Create a Hubot"></a>Create a Hubot</h2><p>Before we discuss deploying Hubot, let’s make sure you have an instance of Hubot ready to deploy. When you can run it locally and it successfully connects to the adapter of your choice, we’ll move on. Check out <a href="https://hubot.github.com/docs/#getting-started-with-hubot" target="_blank" rel="external">Getting Started With Hubot</a> and build your Hubot instance. Don’t worry, we’ll wait for you.</p>
+<h2 id="Setup-AWS"><a href="#Setup-AWS" class="headerlink" title="Setup AWS"></a>Setup AWS</h2><p>We’ll be using the Elastic Beanstalk CLI to deploy. You can find the docs <a href="http://docs.aws.amazon.com/elasticbeanstalk/latest/dg/eb-cli3.html" target="_blank" rel="external">here</a>. Here’s the gist</p>
+<ol>
+<li><p>Ensure you have <code>pip</code> installed</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">sudo apt-get install python-pip</div></pre></td></tr></table></figure>
+</li>
+<li><p>Install the AWS EB CLI</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">sudo pip install awsebcli</div></pre></td></tr></table></figure>
+</li>
+</ol>
+<h2 id="Configure-Hubot-for-EB"><a href="#Configure-Hubot-for-EB" class="headerlink" title="Configure Hubot for EB"></a>Configure Hubot for EB</h2><p>EB by default will run <code>npm start</code> to kick off your node app. This makes it easy for us to pragmatically define our startup options. We can configure npm’s <code>start</code> script in the <code>package.json</code> file. Note that coffee-script isn’t in EB’s PATH by default, so we’ll call it directly before calling Hubot with its various options.<br><figure class="highlight json"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">&#123;</div><div class="line">  <span class="attr">"name"</span>: <span class="string">"hubot"</span>,</div><div class="line">  <span class="attr">"version"</span>: <span class="string">"1.0.0"</span>,</div><div class="line">  <span class="attr">"scripts"</span>: &#123;</div><div class="line">    <span class="attr">"start"</span>: <span class="string">"node node_modules/coffee-script/bin/coffee node_modules/hubot/bin/hubot --name hubot --adapter slack"</span></div><div class="line">  &#125;,</div><div class="line">  <span class="attr">"dependencies"</span>: &#123;</div><div class="line">    <span class="attr">"coffee-script"</span>: <span class="string">"1.9.0"</span></div><div class="line">  &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>You can test this by running <code>npm start</code>. Be sure to set any environment variables</p>
+<h2 id="Create-the-EB-Application"><a href="#Create-the-EB-Application" class="headerlink" title="Create the EB Application"></a>Create the EB Application</h2><p>Configure EB. If you have a VPC, select the region where it exists. Otherwise the default is sufficient.</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line">eb init</div><div class="line"></div><div class="line"><span class="comment"># Select a default region</span></div><div class="line"><span class="comment"># 1) us-east-1 : US East (N. Virginia)</span></div><div class="line"><span class="comment"># 2) us-west-1 : US West (N. California)</span></div><div class="line"><span class="comment"># 3) us-west-2 : US West (Oregon)</span></div><div class="line"><span class="comment"># 4) eu-west-1 : EU (Ireland)</span></div><div class="line"><span class="comment"># 5) eu-central-1 : EU (Frankfurt)</span></div><div class="line"><span class="comment"># 6) ap-southeast-1 : Asia Pacific (Singapore)</span></div><div class="line"><span class="comment"># 7) ap-southeast-2 : Asia Pacific (Sydney)</span></div><div class="line"><span class="comment"># 8) ap-northeast-1 : Asia Pacific (Tokyo)</span></div><div class="line"><span class="comment"># 9) sa-east-1 : South America (Sao Paulo)</span></div><div class="line"><span class="comment"># 10) cn-north-1 : China (Beijing)</span></div><div class="line"><span class="comment"># (default is 3): </span></div><div class="line">3</div></pre></td></tr></table></figure>
+<p>If this is your first time using EB you’ll be prompted to enter your AWS credentials.. If you don’t have these you can generate them <a href="https://console.aws.amazon.com/iam/home#users" target="_blank" rel="external">here</a>. Ensure that the user you use has access to provision EC2 instances<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"><span class="comment"># You have not yet set up your credentials or your credentials are incorrect </span></div><div class="line"><span class="comment"># You must provide your credentials.</span></div><div class="line"><span class="comment"># (aws-access-id): </span></div><div class="line">&lt;your aws-access-id&gt;</div><div class="line"><span class="comment"># (aws-secret-key): </span></div><div class="line">&lt;your aws-secret-key&gt;</div></pre></td></tr></table></figure></p>
+<p>Now we’ll create the app.<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="comment"># Enter Application Name</span></div><div class="line"><span class="comment"># (default is "Desktop"): </span></div><div class="line">hubot</div><div class="line"><span class="comment"># Application hubot has been created.</span></div></pre></td></tr></table></figure></p>
+<p>Be sure to select the Node.js platform<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line"><span class="comment"># Select a platform.</span></div><div class="line"><span class="comment"># 1) Node.js</span></div><div class="line"><span class="comment"># 2) PHP</span></div><div class="line"><span class="comment"># 3) Python</span></div><div class="line"><span class="comment"># 4) Ruby</span></div><div class="line"><span class="comment"># 5) Tomcat</span></div><div class="line"><span class="comment"># 6) IIS</span></div><div class="line"><span class="comment"># 7) Docker</span></div><div class="line"><span class="comment"># 8) Multi-container Docker</span></div><div class="line"><span class="comment"># 9) GlassFish</span></div><div class="line"><span class="comment"># 10) Go</span></div><div class="line"><span class="comment"># 11) Java</span></div><div class="line"><span class="comment"># (default is 1):</span></div><div class="line">1</div></pre></td></tr></table></figure></p>
+<p>For hubot, we don’t need to setup SSH<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="comment"># Do you want to set up SSH for your instances?</span></div><div class="line"><span class="comment"># (y/n): </span></div><div class="line">n</div></pre></td></tr></table></figure></p>
+<p>At this point you should be able to see the empty application provisioned on the <a href="https://console.aws.amazon.com/elasticbeanstalk/home" target="_blank" rel="external">Beanstalk Console</a>. Protip: make sure you’re viewing the region you previously chose. You can witch regions at the top right.</p>
+<h1 id="Create-an-EB-Environment"><a href="#Create-an-EB-Environment" class="headerlink" title="Create an EB Environment"></a>Create an EB Environment</h1><p>Before we can deploy, we need to setup an environment to deploy to. We can create one with <code>eb create</code> or select an already existing environment with <code>eb use my-env-name</code><br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">eb create</div><div class="line"><span class="comment"># Enter Environment Name</span></div><div class="line"><span class="comment"># (default is hubot-dev): </span></div><div class="line">production</div><div class="line"><span class="comment"># Enter DNS CNAME prefix</span></div><div class="line"><span class="comment"># (default is hubot-dev)</span></div><div class="line"><span class="comment"># Creating application version archive "app".</span></div><div class="line"><span class="comment"># Uploading hubot/app.zip to S3. This may take a while.</span></div><div class="line"><span class="comment"># Upload Complete.</span></div></pre></td></tr></table></figure></p>
+<p>Hubot configuration is pulled from environment variables. To set environment variables for your EB Environment we’ll use <code>eb setenv</code><br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">eb setenv HUBOT_SLACK_TOKEN=xxxxx</div><div class="line"><span class="comment"># INFO: Environment update is starting.                               </span></div><div class="line"><span class="comment"># INFO: Updating environment demo-production's configuration settings.</span></div></pre></td></tr></table></figure></p>
+<h1 id="Deploy"><a href="#Deploy" class="headerlink" title="Deploy"></a>Deploy</h1><p>Finally, we can deploy this beast.<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">eb deploy</div></pre></td></tr></table></figure></p>
+<p>Be sure to check out the status of your instance in the <a href="https://console.aws.amazon.com/elasticbeanstalk/home" target="_blank" rel="external">Beanstalk Console</a>. Once the application is fully deployed you can view its status and logs from the console or using the EB CLI.</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;If you haven’t already embraced the ChatOps methodology it’s time to seriously consider it. Coining the term, the folks over at Github describe it as “putting tools in the middle of the conversation”. Their widely adopted implementation of this is through Hubot. Hubot runs on Node.js offering a light-weight backend but also the extensibility that Node.js offers.&lt;/p&gt;
+&lt;p&gt;To gain the ChatOps benefits from Hubot you’ll want to run it somewhere that allows it access to internal resources. Ths way you can interact with your proprietary systems without exposing them to the internet. Should you find yourself in a place where you’re either comfortable connecting your VPC to your local network or simply don’t care about interacting with local resources this article is for you. Deploying Hubot to AWS Beanstalk is great because it has the scaling availability that Beanstalk offers coupled with the cheap pricing of EC2. Most hubot instances will easily fall within EC2’s free tier.&lt;/p&gt;
+    
+    </summary>
+    
+      <category term="walkthrough" scheme="http://blog.milesmaddox.com/categories/walkthrough/"/>
+    
+    
+  </entry>
+  
+  <entry>
+    <title>Collection of Install Scripts</title>
+    <link href="http://blog.milesmaddox.com/2015/10/08/install-scripts/"/>
+    <id>http://blog.milesmaddox.com/2015/10/08/install-scripts/</id>
+    <published>2015-10-08T05:00:00.000Z</published>
+    <updated>2016-11-01T14:28:47.432Z</updated>
+    
+    <content type="html"><![CDATA[<p>Chef, Ansible, and Puppet are all excellent tools for configuration management but every now and then you just need to install something quick and all you have is bash. I keep a constantly evolving collection of scripts for just this purpose. They are almost all for the Ubuntu flavor. If I know I am going to be in a VM for a while, I’ll just kick off the whole spread.</p>
+<a id="more"></a>
+<p>You can <a href="https://www.milesmaddox.com/owncloud/index.php/s/6zBPi8aSOPBrO7B" title="Install Scripts" target="_blank" rel="external">view the collection here</a>, hosted via OwnCloud. Some examples below</p>
+<p><strong>Java</strong><br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div></pre></td><td class="code"><pre><div class="line"><span class="meta">#!/bin/sh</span></div><div class="line"></div><div class="line">MAJOR_VERSION=7</div><div class="line">MINOR_VERSION=76</div><div class="line">BUILD=13</div><div class="line"></div><div class="line">VERSION=<span class="string">"<span class="variable">$MAJOR_VERSION</span>"</span>u<span class="string">"<span class="variable">$MINOR_VERSION</span>"</span></div><div class="line">wget --no-cookies --no-check-certificate \</div><div class="line">--header <span class="string">"Cookie: gpw_e24=http%3A%2F%2Fwww.oracle.com%2F; oraclelicense=accept-securebackup-cookie"</span> \</div><div class="line"><span class="string">"http://download.oracle.com/otn-pub/java/jdk/<span class="variable">$VERSION</span>-b<span class="variable">$BUILD</span>/jdk-<span class="variable">$VERSION</span>-linux-x64.tar.gz"</span> \</div><div class="line">-O jdk-<span class="variable">$VERSION</span>-linux-x64.tar.gz</div><div class="line"></div><div class="line">sudo mkdir -p /usr/<span class="built_in">local</span>/java</div><div class="line">sudo tar xvzf jdk-<span class="variable">$VERSION</span>-linux-x64.tar.gz -C /usr/<span class="built_in">local</span>/java</div><div class="line">rm jdk-<span class="variable">$VERSION</span>-linux-x64.tar.gz</div><div class="line"></div><div class="line">JAVADIR=/usr/<span class="built_in">local</span>/java/jdk1.<span class="string">"<span class="variable">$MAJOR_VERSION</span>"</span>.0_<span class="string">"<span class="variable">$MINOR_VERSION</span>"</span></div><div class="line"></div><div class="line"><span class="comment">#Completely remove the OpenJDK/JRE from your system and create a directory to hold your Oracle Java JDK/JRE binaries. </span></div><div class="line">sudo apt-get purge openjdk-\*</div><div class="line"></div><div class="line"><span class="comment">#Inform your Ubuntu Linux system where your Oracle Java JDK/JRE is located.</span></div><div class="line">sudo update-alternatives --install <span class="string">"/usr/bin/java"</span> <span class="string">"java"</span> <span class="variable">$JAVADIR</span>/jre/bin/java 1</div><div class="line"></div><div class="line"><span class="comment">#Inform your Ubuntu Linux system that Oracle Java JDK/JRE must be the default Java.</span></div><div class="line">sudo update-alternatives --set java <span class="string">"<span class="variable">$JAVADIR</span>/jre/bin/java"</span></div></pre></td></tr></table></figure></p>
+<p><strong>ChefDK</strong><br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"><span class="meta">#!/bin/sh</span></div><div class="line">VERSION=0.9.0</div><div class="line">wget https://opscode-omnibus-packages.s3.amazonaws.com/ubuntu/12.04/x86_64/chefdk_<span class="variable">$VERSION_amd64</span>.deb -O ~/Downloads/chefdk.deb</div><div class="line"></div><div class="line">sudo dpkg -i ~/Downloads/chefdk.deb</div><div class="line">rm ~/Downloads/chefdk.deb</div><div class="line">sudo apt-get install ruby-full</div><div class="line"></div><div class="line">sh ./vagrant.sh</div></pre></td></tr></table></figure></p>
+<p><strong>IntelliJ</strong><br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line"><span class="meta">#!/bin/sh</span></div><div class="line">VERSION=14.1.1</div><div class="line">GROUP=`id -g -n <span class="variable">$USERNAME</span> | awk <span class="string">'&#123; print $1 &#125;'</span>`</div><div class="line">wget https://download.jetbrains.com/idea/ideaIU-<span class="variable">$VERSION</span>.tar.gz -O ideaIU.tar.gz</div><div class="line">sudo rm -rf /opt/intellij</div><div class="line">sudo tar -zxf ideaIU.tar.gz --transform <span class="string">'s_^idea-IU-[0-9]*\.[0-9]*\.[0-9]*/_intellij/_'</span>  -C /opt/</div><div class="line">sudo chown -R <span class="variable">$USERNAME</span>:<span class="variable">$GROUP</span> /opt/intellij</div><div class="line">rm ideaIU.tar.gz</div></pre></td></tr></table></figure></p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;Chef, Ansible, and Puppet are all excellent tools for configuration management but every now and then you just need to install something quick and all you have is bash. I keep a constantly evolving collection of scripts for just this purpose. They are almost all for the Ubuntu flavor. If I know I am going to be in a VM for a while, I’ll just kick off the whole spread.&lt;/p&gt;
+    
+    </summary>
+    
+      <category term="uncategorized" scheme="http://blog.milesmaddox.com/categories/uncategorized/"/>
+    
+    
+  </entry>
+  
+  <entry>
+    <title>Auto-Mount Local Drives/Partitions in Linux</title>
+    <link href="http://blog.milesmaddox.com/2015/03/13/auto-mount-local-drives-partitions-in-Linux/"/>
+    <id>http://blog.milesmaddox.com/2015/03/13/auto-mount-local-drives-partitions-in-Linux/</id>
+    <published>2015-03-13T05:00:00.000Z</published>
+    <updated>2016-11-01T14:33:20.488Z</updated>
+    
+    <content type="html"><![CDATA[<p>So you’ve dual-booted linux but haven’t yet purged Windows from your machine. Congrats on your progress but if you really want to help yourself go ahead and wipe the Windows partition, too. Alas, if you can’t bring yourself to do so, here’s how to mount the partition and ensure its persistence after rebooting.</p>
+<a id="more"></a>
+<ol>
+<li><p>View your local drives and partitions with <code>fdisk</code> and identify the drive you would like to mount. Following a dual-boot install, this will typically be <em>/dev/sdb2</em>, so we’ll assume that for the rest of the tut.<br>Note that if it is a Windows partition, you’ll see a <em>NTFS/exFAT</em> under the System stats.</p>
+ <figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">sudo fdisk <span class="_">-l</span></div><div class="line"><span class="comment">#&gt; Disk /dev/sdb: 320.1 GB, 320072933376 bytes</span></div><div class="line"><span class="comment">#&gt; 255 heads, 63 sectors/track, 30401 cylinders, total 488397168 sectors</span></div><div class="line"><span class="comment">#&gt; Units = sectors of 1 * 512 = 512 bytes</span></div><div class="line"><span class="comment">#&gt; Sector size (logical/physical): 512 bytes / 512 bytes</span></div><div class="line"><span class="comment">#&gt; I/O size (minimum/optimal): 512 bytes / 512 bytes</span></div><div class="line"><span class="comment">#&gt; Disk identifier: 0x000000</span></div><div class="line"><span class="comment">#&gt; </span></div><div class="line"><span class="comment">#&gt;    Device Boot      Start         End      Blocks   Id  System</span></div><div class="line"><span class="comment">#&gt; /dev/sdb1            2048   167774207    234883071   82  Linux</span></div><div class="line"><span class="comment">#&gt; /dev/sdb2       167774208   234883072    625141759   82  HPFS/NTFS/exFAT</span></div></pre></td></tr></table></figure>
+</li>
+<li><p>Create a folder for this partition to mount. It can be anywhere, but convention is in the <em>/mnt</em> directory.</p>
+ <figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">sudo mkdir /mnt/windows</div></pre></td></tr></table></figure>
+</li>
+<li><p>Mount the drivesudo mount /dev/sdb2 /mnt/windows (with /dev/* being whatever drive you identified in fdisk) </p>
+ <figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">sudo mount /dev/sdb2 /mnt/windows</div><div class="line">ls -al /mnt/windows</div><div class="line"><span class="comment">#&gt; your data here</span></div></pre></td></tr></table></figure>
+</li>
+<li><p>Now that you can successfully mount the partition let’s configure it to mount automatically. To do this, start by identifying your partition’s UUID with <code>blkid</code></p>
+ <figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">sudo blkid /dev/sdb2</div><div class="line"><span class="comment">#&gt; /dev/sdb2: UUID="CEAA91D9AA91BE81" TYPE="ntfs"</span></div></pre></td></tr></table></figure>
+</li>
+<li><p>Copy the UUID and add a mount entry to <em>/etc/fstab</em> as <code>UUID=YOUR_UUID /mnt/YOUR_LOCAL_MOUNTPOINT ntfs uid=root,gid=users,dmask=0002,fmask=0002 0</code></p>
+ <figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">sudo vi /etc/fstab </div><div class="line"><span class="comment">#&gt; UUID=CEAA91D9AA91BE81 /mnt/windows ntfs uid=root,gid=users,dmask=0002,fmask=0002 0 0</span></div></pre></td></tr></table></figure>
+</li>
+</ol>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;So you’ve dual-booted linux but haven’t yet purged Windows from your machine. Congrats on your progress but if you really want to help yourself go ahead and wipe the Windows partition, too. Alas, if you can’t bring yourself to do so, here’s how to mount the partition and ensure its persistence after rebooting.&lt;/p&gt;
+    
+    </summary>
+    
+      <category term="walkthrough" scheme="http://blog.milesmaddox.com/categories/walkthrough/"/>
+    
+    
+      <category term="linux" scheme="http://blog.milesmaddox.com/tags/linux/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Zoho Invoice Wordpress Plugin</title>
+    <link href="http://blog.milesmaddox.com/2012/11/13/zoho-invoice-wordpress-plugin/"/>
+    <id>http://blog.milesmaddox.com/2012/11/13/zoho-invoice-wordpress-plugin/</id>
+    <published>2012-11-13T06:00:00.000Z</published>
+    <updated>2016-11-01T14:30:00.816Z</updated>
+    
+    <content type="html"><![CDATA[<p>My latest project has been getting our invoicing software, Zoho Invoice, up and running for clients to view past<br>invoices and current pending invoices from inside their user account. In keeping all things modular, I’ve written it as a plugin for WP and have pushed the source to the WP market. </p>
+<a id="more"></a>
+<p>You can download the plugin <a href="http://wordpress.org/extend/plugins/zoho-invoice/" title="Zoho Invoice Plugin" target="_blank" rel="external">here</a>.</p>
+<h3 id="Usage"><a href="#Usage" class="headerlink" title="Usage"></a>Usage</h3><p>The plugin is designed to execute via shortcodes. Once you’ve added your API key and Auth token in settings, you can add shortcodes to any posts or pages.<br><code>[ listcustomers]</code><br>The above shortcode will generate a list of your customers complemented by their customer ID.<br><code>[ invoice customer=&quot;000000000000000000&quot;]</code><br>Intended for the customer to view, this shows a complete list of invoices for the specified customer. The <em>customer</em> tag refers to the 18 character CustomerID.</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;My latest project has been getting our invoicing software, Zoho Invoice, up and running for clients to view past&lt;br&gt;invoices and current pending invoices from inside their user account. In keeping all things modular, I’ve written it as a plugin for WP and have pushed the source to the WP market. &lt;/p&gt;
+    
+    </summary>
+    
+      <category term="software" scheme="http://blog.milesmaddox.com/categories/software/"/>
+    
+    
+  </entry>
+  
+  <entry>
+    <title>Lastpass</title>
+    <link href="http://blog.milesmaddox.com/2012/09/10/lastpass/"/>
+    <id>http://blog.milesmaddox.com/2012/09/10/lastpass/</id>
+    <published>2012-09-10T05:00:00.000Z</published>
+    <updated>2016-11-01T14:29:26.328Z</updated>
+    
+    <content type="html"><![CDATA[<p>Dropping a quick post to endorse Lastpass. This blog is all about the tools that make good engineers better, and Lastpass has met the demand thus far. It is a great solution for password management. If you haven’t considered generating a random password for every site or service you use, consider <a href="https://lastpass.com/f?507166" title="lastpass.com" target="_blank" rel="external">Lastpass</a>.</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;Dropping a quick post to endorse Lastpass. This blog is all about the tools that make good engineers better, and Lastpass has met the dem
+    
+    </summary>
+    
+      <category term="software" scheme="http://blog.milesmaddox.com/categories/software/"/>
+    
+    
+  </entry>
+  
+</feed>
