@@ -31,7 +31,7 @@ exec "$@" &
 wait
 ```
 Using `trap` we can call the gracefulShutdown function once `SIGTERM` is received.
-By `exec "$@" &` allows us to start our application on it's own separate process, leaving process 1 for the entrypoint script.
+Executing all arguments in the background with `exec "$@" &` allows us to start our application in its own separate process, leaving process 1 for the entrypoint script.
 The `wait` tells our script not to exit until our application does. This keeps the entrypoint script alive long enough to hear any system signals.
 
 ## s3ql example
