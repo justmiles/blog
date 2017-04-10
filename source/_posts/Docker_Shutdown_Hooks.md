@@ -1,5 +1,5 @@
 ---
-title: Docker Shutdown Hooks
+title: Docker Shutdown Hooks (or the lack therof)
 date: 2016-10-31
 id: 1477944296
 tags:
