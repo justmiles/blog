@@ -3,11 +3,11 @@
 ## Source: https://github.com/hexojs/hexo/
 
 # Site
-title: My Inner Daemons
-subtitle: Notes from an SRE
+title: Miles Maddox
+subtitle: Notes from justMiles
 description:
-author: Miles Maddox
-language:
+author: justMiles
+language: en
 timezone: America/Chicago
 
 # URL
@@ -67,7 +67,7 @@ pagination_dir: page
 # Extensions
 ## Plugins: http://hexo.io/plugins/
 ## Themes: http://hexo.io/themes/
-theme: milesmaddox
+theme: icarus
 
 # Deployment
 ## Docs: http://hexo.io/docs/deployment.html
@@ -78,7 +78,3 @@ feed:
   type: atom
   path: atom.xml
   limit: 20
-
-# Disqus
-disqus_shortname: milesmaddox
-
