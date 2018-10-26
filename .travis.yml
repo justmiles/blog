@@ -8,7 +8,7 @@ after_success:
 - "./node_modules/hexo/bin/hexo generate"
 deploy:
   provider: s3
-  bucket: blog.milesmaddox.com
+  bucket: milesmaddox.com
   skip_cleanup: true
   acl: public_read
   local_dir: public

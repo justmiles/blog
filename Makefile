@@ -8,7 +8,7 @@ serve: build
 deploy:
 	hexo clean
 	hexo generate
-	aws s3 sync public s3://blog.milesmaddox.com --delete --acl public-read
+	aws s3 sync public s3://milesmaddox.com --delete --acl public-read
 	
 devsetup:
 	if [ -s "$$HOME/.nvm/nvm.sh" ]; then \
