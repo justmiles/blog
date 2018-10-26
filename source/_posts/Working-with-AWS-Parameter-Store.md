@@ -3,7 +3,7 @@ date: 2018-10-26 11:10:46
 tags:
 ---
 
-There are several very reliable key-value stores to choose from - [HashiCorp's Vault](https://www.vaultproject.io) is an honorable mention, but when  deploying applications in AWS I often lean of the [AWS Parameter Store](https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-paramstore.html) as the de facto key-value repository. It simplifies the process of storing, encrypting, and retrieving application data and does so in a secure enough manner to satisfy even the most persnickety security engineers. Data is encrypted using the [Key Management Service](https://aws.amazon.com/kms) and access is controlled via IAM.
+There are several very reliable key-value stores to choose from - [HashiCorp's Vault](https://www.vaultproject.io) is an honorable mention, but when deploying applications in AWS I often lean on the [AWS Parameter Store](https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-paramstore.html) as the de facto key-value repository. It simplifies the process of storing, encrypting, and retrieving application data and does so in a secure enough manner to satisfy even the most persnickety security engineers. Data is encrypted using the [Key Management Service](https://aws.amazon.com/kms) and access is controlled via IAM.
 
 <!-- more -->
 
