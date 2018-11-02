@@ -2,6 +2,7 @@
 title: Deploying Hubot to AWS Elastic Beanstalk
 date: 2015-10-14
 id: 1444755600
+tags: aws
 categories:
   - walkthrough
 ---
