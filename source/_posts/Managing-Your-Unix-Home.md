@@ -1,6 +1,6 @@
 ---
 title: Managing Your Linux Home
-date: 2016-10-31
+date: 2017-08-04
 id: 1452133191
 tags:
   - linux
