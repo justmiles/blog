@@ -10,6 +10,9 @@ deploy:
 	hexo generate
 	aws s3 sync public s3://milesmaddox.com --delete --acl public-read
 	
+travis-lint:
+	docker run -v $(pwd):/project --rm skandyla/travis-cli lint .travis.yml
+
 devsetup:
 	if [ -s "$$HOME/.nvm/nvm.sh" ]; then \
 		. "$$HOME/.nvm/nvm.sh"; \
