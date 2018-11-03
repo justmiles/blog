@@ -4,8 +4,6 @@ date: 2017-08-04
 id: 1452133191
 tags:
   - linux
-categories:
-  - uncategorized
 ---
 There's no place like `~/`. 
 

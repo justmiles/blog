@@ -4,7 +4,6 @@ date: 2015-10-25
 id: 1445792400
 tags:
   - linux
-categories:
   - walkthrough
 description: description
 ---

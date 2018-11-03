@@ -15,7 +15,7 @@ customize:
         url: images/logo.png
     profile:
         enabled: true # Whether to show profile bar
-        fixed: true
+        fixed: false
         avatar: css/images/avatar.png
         gravatar: j.milesmaddox@gmail.com # Gravatar email address, if you enable Gravatar, your avatar config will be overriden
         author: justMiles
@@ -34,12 +34,12 @@ customize:
 
 # Widgets
 widgets:
-    - recent_posts
-    - category
+    # - recent_posts
+    # - category
     # - archive
     - tag
     # - tagcloud
-    # - links
+    - links
 
 # Search
 search:
@@ -80,7 +80,7 @@ share: default # options: jiathis, bdshare, addtoany, default
 plugins:
     lightgallery: true # options: true, false
     justifiedgallery: true # options: true, false
-    google_analytics: # enter the tracking ID for your Google Analytics
+    google_analytics: UA-68541029-1
     google_site_verification: # enter Google site verification code
     baidu_analytics: # enter Baidu Analytics hash key
     mathjax: false # options: true, false
@@ -93,4 +93,6 @@ miscellaneous:
         twitter_id:
         google_plus:
     links:
-        Hexo: http://hexo.io
+        linkedin.com/in/milesmaddox: https://www.linkedin.com/in/milesmaddox/
+        github.com/justmiles: https://github.com/justmiles
+        keybase.io/justmiles: https://keybase.io/justmiles

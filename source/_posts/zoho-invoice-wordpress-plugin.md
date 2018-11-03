@@ -2,7 +2,7 @@
 title: Zoho Invoice Wordpress Plugin
 date: 2012-11-13
 id: 1352786400
-categories:
+tags:
   - software
 ---
 My latest project has been getting our invoicing software, Zoho Invoice, up and running for clients to view past 

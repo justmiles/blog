@@ -4,7 +4,6 @@ date: 2016-10-31
 id: 1477944296
 tags:
   - docker
-categories:
   - devops
 ---
 

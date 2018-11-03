@@ -2,7 +2,7 @@
 title: Chrome Extension Example
 date: 2015-10-25
 id: 1445749200
-categories:
+tags:
   - walkthrough
 ---
 
