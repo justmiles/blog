@@ -1,10 +1,12 @@
-FROM node:boron-alpine
+FROM node:10-jessie
 
 RUN npm install -g hexo-cli
 
-COPY . blog
+COPY . /blog
 
-RUN cd blog && npm install
+WORKDIR /blog
 
-ENTRYPOINT ["blog/entrypoint.sh"]
+RUN npm install && 	hexo clean && hexo generate --force
+
+ENTRYPOINT ["/blog/entrypoint.sh"]
 

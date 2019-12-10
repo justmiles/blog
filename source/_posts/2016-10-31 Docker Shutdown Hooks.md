@@ -4,7 +4,6 @@ date: 2016-10-31
 id: 1477944296
 tags:
   - docker
-  - devops
 ---
 
 Let me start by saying there are no shutdown hooks for docker. Supporting hooks in general have been an [open feature request](https://github.com/docker/docker/issues/6982) for two years now. In lieu of a legitimate shutdown hook, you can manage the graceful shutdown of your container through a wrapper script that responds to `SIGINT` and `SIGTERM` signals.
@@ -15,7 +14,7 @@ By default, Docker stops containers by sending `SIGTERM` to process `1` inside t
 By default, Docker stops containers by sending `SIGTERM` to process `1` inside the container. It gives the process a short few seconds (I'm not sure exactly how long the default is) before sending `SIGKILL` to the kernel itself to terminate the process. If your process needs to properly close connections or exit in a clean fashion it has a very short window to do so. You can set the amount of time your between the `SIGTERM` signal being sent to the process and the `SIGKILL` signal sent to the kernel with the `--time` argument: `docker stop --time=30 <container>`, but sometimes you need to manually specify a shutdown procedure.
 
 I ran into this issue recently when building a container that mounts an  [s3ql filesystem](https://bitbucket.org/nikratio/s3ql/). In order to ensure data is completely written to the filesystem you need to properly dismount it before closing the container. If you drop a file onto the filesystem and close it shortly thereafter, there a strong chance the file hasn't fully uploaded to S3. And with S3QL specifically you need to properly unmount the filesystem in order to mount it again without errors. So I had to find a way to unmount before the container closed. 
- 
+
 ## entrypoint.sh
 Enter the wrapper script. If you're familiar with Docker, you know of the [docker entrypoint](https://docs.docker.com/engine/reference/#entrypoint-default-command-to-execute-at-runtime) functionality. This trick here is to write an entrypoint script that stays process 1 in the container. The entrypoint script will start your application and contain the functionality to gracefully shutdown. 
 
