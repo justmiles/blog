@@ -1,4 +1,6 @@
+---
 title: Purging Route53 Zones
+date: 2018-09-31
 tags: aws
 ---
 

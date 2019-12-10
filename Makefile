@@ -13,12 +13,18 @@ clean:
 	rm -rf public
 	docker rm -f blog 2>/dev/null || exit 0
 
-deploy: build copy
+deploy: copy
 	aws s3 sync public s3://milesmaddox.com --delete --acl public-read
 	
 travis-lint:
 	docker run -v $(pwd):/project --rm skandyla/travis-cli lint .travis.yml
 
+auto-deploy: 
+	[ "$$(git status --short | wc -l)" -eq 0 ] || echo "Deploying"
+	git add -A
+	git commit -m 'auto-deploy'
+	make build && make deploy
+	
 devsetup:
 	if [ -s "$$HOME/.nvm/nvm.sh" ]; then \
 		. "$$HOME/.nvm/nvm.sh"; \

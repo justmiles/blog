@@ -11,7 +11,7 @@ So you've dual-booted linux but haven't yet purged Windows from your machine. Co
 
 <!-- more -->
 
-1. View your local drives and partitions with `fdisk` and identify the drive you would like to mount. Following a dual-boot install, this will typically be */dev/sdb2*, so we'll assume that for the rest of the tut.
+1.   View your local drives and partitions with `fdisk` and identify the drive you would like to mount. Following a dual-boot install, this will typically be */dev/sdb2*, so we'll assume that for the rest of the tut.
 Note that if it is a Windows partition, you'll see a _NTFS/exFAT_ under the System stats.
     ```bash
     sudo fdisk -l

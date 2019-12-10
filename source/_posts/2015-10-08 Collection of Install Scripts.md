@@ -1,7 +1,7 @@
 ---
 title: Collection of Install Scripts
 date: 2015-10-08
-id: 1444280400
+id: collection-of-install-scripts
 tags:
   - software
 ---
